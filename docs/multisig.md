@@ -354,8 +354,10 @@ client.remove_signer(&admin, &compromised_signer);
 
 ### Threshold Safety
 - Threshold must always be: 1 ≤ threshold ≤ signer count
+- Automatic threshold adjustment to 1 when first signer is added
 - Automatic threshold adjustment when removing signers
-- Cannot remove last signer
+- Cannot remove last signer without setting threshold appropriately (governance lockout protections)
+- Admin can override and directly execute an unpause action when required
 
 ### Overflow Protection
 - All arithmetic operations use checked arithmetic

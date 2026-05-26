@@ -109,6 +109,12 @@ contract.approve_pause_proposal(signer2_address, proposal_id);
 contract.execute_pause_proposal(proposal_id);
 ```
 
+### Emergency Admin Unpause Override
+```rust
+// Admin can bypass the multisig threshold and unpause the contract directly to prevent governance lockout.
+contract.unpause(admin_address);
+```
+
 ## Configuration Recommendations
 
 ### Production Environment
@@ -127,7 +133,8 @@ contract.execute_pause_proposal(proposal_id);
 All pause mechanism implementations include comprehensive tests covering:
 - Basic pause/unpause functionality
 - Multi-signature proposal workflow
-- Threshold enforcement
+- Threshold enforcement and invariants (no-lockout)
+- Admin override for unpausing
 - Read-only operation preservation
 - State-changing operation blocking
 - Error conditions and edge cases
