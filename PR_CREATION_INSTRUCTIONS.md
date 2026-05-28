@@ -3,12 +3,12 @@
 ## ✅ Branch Created and Pushed Successfully
 
 **Branch Name**: `feature/safe-erc20-migration`
-**Remote URL**: https://github.com/sheyman546/Credence-Contracts/pull/new/feature/safe-erc20-migration
+**Remote URL**: https://github.com/CredenceOrg/Credence-Contracts/pull/new/feature/safe-erc20-migration
 
 ## 🚀 How to Create the Pull Request
 
 ### Method 1: GitHub Web Interface (Recommended)
-1. **Visit the PR creation URL**: https://github.com/sheyman546/Credence-Contracts/pull/new/feature/safe-erc20-migration
+1. **Visit the PR creation URL**: https://github.com/CredenceOrg/Credence-Contracts/pull/new/feature/safe-erc20-migration
 2. **Fill in the PR details**:
    - **Title**: `refactor(contracts): migrate token flows to SafeERC20`
    - **Description**: Copy the content from `PR_DESCRIPTION.md`
@@ -23,7 +23,7 @@
 gh pr create --title "refactor(contracts): migrate token flows to SafeERC20" \
             --body "$(cat PR_DESCRIPTION.md)" \
             --base main \
-            --head feature/safe-erc20-migration \
+            --head yashimamina6:feature/safe-erc20-migration \
             --label enhancement,security,refactor
 ```
 

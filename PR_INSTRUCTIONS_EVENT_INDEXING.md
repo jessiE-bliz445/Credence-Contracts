@@ -8,7 +8,7 @@
 ## Manual PR Creation Steps
 
 ### 1. Visit GitHub
-Go to: https://github.com/sheyman546/Credence-Contracts
+Go to: https://github.com/CredenceOrg/Credence-Contracts
 
 ### 2. Create Pull Request
 1. Click on **"Pull requests"** tab
@@ -47,9 +47,9 @@ Add appropriate reviewers for:
 
 ## 🔗 Quick Links
 
-- **Branch**: https://github.com/sheyman546/Credence-Contracts/tree/fix/position-event-indexing
-- **Compare View**: https://github.com/sheyman546/Credence-Contracts/compare/main...fix/position-event-indexing
-- **PR Creation**: https://github.com/sheyman546/Credence-Contracts/pull/new/fix/position-event-indexing
+- **Branch**: https://github.com/yashimamina6/Credence-Contracts/tree/fix/position-event-indexing
+- **Compare View**: https://github.com/CredenceOrg/Credence-Contracts/compare/main...yashimamina6:fix/position-event-indexing
+- **PR Creation**: https://github.com/CredenceOrg/Credence-Contracts/pull/new/fix/position-event-indexing
 
 ## 📋 PR Summary for Quick Copy
 
