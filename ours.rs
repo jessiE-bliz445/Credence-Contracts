@@ -219,6 +219,9 @@ impl CredenceBond {
     ///
     /// Authority: `identity` must authorize this call.
     /// In a full implementation this would transfer USDC from the caller and store the bond.
+    ///
+    /// # Events
+    /// Emits `bond_created` event with (identity, amount, bond_start, duration)
     pub fn create_bond(
         e: Env,
         identity: Address,
@@ -254,6 +257,13 @@ impl CredenceBond {
         bump_instance_ttl(&e, &key);
         let tier = tiered_bond::get_tier_for_amount(amount);
         tiered_bond::emit_tier_change_if_needed(&e, &identity, BondTier::Bronze, tier);
+        
+        // Emit bond_created event
+        e.events().publish(
+            (Symbol::new(&e, "bond_created"),),
+            (identity.clone(), amount, bond_start, duration),
+        );
+        
         bond
     }
 
@@ -504,6 +514,9 @@ impl CredenceBond {
     /// - `ContractError::SlashExceedsBond` (203)
     /// - `ContractError::InsufficientBalance` (202)
     /// - `ContractError::Underflow` (701)
+    ///
+    /// # Events
+    /// Emits `bond_withdrawn` event with (identity, old_amount, new_amount, timestamp)
     pub fn withdraw(e: Env, identity: Address, amount: i128) -> IdentityBond {
         identity.require_auth();
         let key = DataKey::Bond(identity);
@@ -550,6 +563,8 @@ impl CredenceBond {
             panic_with_error!(e, ContractError::InsufficientBalance);
         }
 
+        let old_amount = bond.bonded_amount;
+        
         // Perform withdrawal with overflow protection
         bond.bonded_amount = bond
             .bonded_amount
@@ -563,6 +578,13 @@ impl CredenceBond {
 
         e.storage().instance().set(&key, &bond);
         bump_instance_ttl(&e, &key);
+        
+        // Emit bond_withdrawn event
+        e.events().publish(
+            (Symbol::new(&e, "bond_withdrawn"),),
+            (bond.identity.clone(), old_amount, bond.bonded_amount, now),
+        );
+        
         bond
     }
 
@@ -725,6 +747,9 @@ impl CredenceBond {
     /// Errors:
     /// - `ContractError::BondNotFound` (200)
     /// - `ContractError::Overflow` (700)
+    ///
+    /// # Events
+    /// Emits `bond_topped_up` event with (identity, old_amount, new_amount, timestamp)
     pub fn top_up(e: Env, identity: Address, amount: i128) -> IdentityBond {
         let key = DataKey::Bond(identity);
         let mut bond = e
@@ -733,14 +758,25 @@ impl CredenceBond {
             .get::<_, IdentityBond>(&key)
             .unwrap_or_else(|| panic_with_error!(e, ContractError::BondNotFound));
 
+        let old_amount = bond.bonded_amount;
+        
         // Perform top-up with overflow protection
         bond.bonded_amount = bond
             .bonded_amount
             .checked_add(amount)
             .unwrap_or_else(|| panic_with_error!(e, ContractError::Overflow));
 
+        let timestamp = e.ledger().timestamp();
+        
         e.storage().instance().set(&key, &bond);
         bump_instance_ttl(&e, &key);
+        
+        // Emit bond_topped_up event
+        e.events().publish(
+            (Symbol::new(&e, "bond_topped_up"),),
+            (bond.identity.clone(), old_amount, bond.bonded_amount, timestamp),
+        );
+        
         bond
     }
 
@@ -749,6 +785,9 @@ impl CredenceBond {
     /// Errors:
     /// - `ContractError::BondNotFound` (200)
     /// - `ContractError::Overflow` (700)
+    ///
+    /// # Events
+    /// Emits `bond_duration_extended` event with (identity, old_duration, new_duration, timestamp)
     pub fn extend_duration(e: Env, identity: Address, additional_duration: u64) -> IdentityBond {
         let key = DataKey::Bond(identity);
         let mut bond = e
@@ -758,6 +797,8 @@ impl CredenceBond {
             .unwrap_or_else(|| panic_with_error!(e, ContractError::BondNotFound));
         bump_instance_ttl(&e, &key);
 
+        let old_duration = bond.bond_duration;
+        
         // Perform duration extension with overflow protection
         bond.bond_duration = bond
             .bond_duration
@@ -770,8 +811,17 @@ impl CredenceBond {
             .checked_add(bond.bond_duration)
             .unwrap_or_else(|| panic_with_error!(e, ContractError::Overflow));
 
+        let timestamp = e.ledger().timestamp();
+        
         e.storage().instance().set(&key, &bond);
         bump_instance_ttl(&e, &key);
+        
+        // Emit bond_duration_extended event
+        e.events().publish(
+            (Symbol::new(&e, "bond_duration_extended"),),
+            (bond.identity.clone(), old_duration, bond.bond_duration, timestamp),
+        );
+        
         bond
     }
 
@@ -1180,6 +1230,9 @@ mod test_replay_prevention;
 
 #[cfg(test)]
 mod test_lockup_gate;
+
+#[cfg(test)]
+mod test_bond_lifecycle_events;
 
 #[cfg(test)]
 mod security;
