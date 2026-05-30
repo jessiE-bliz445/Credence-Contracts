@@ -37,9 +37,6 @@ pub struct IdentityBond {
     pub is_rolling: bool,
     pub withdrawal_requested_at: u64,
     pub notice_period_duration: u64,
-    pub slashed_amount: i128,
-    pub withdrawal_requested_at: u64,
-    pub active: bool,
 }
 
 #[contract]
@@ -463,6 +460,8 @@ impl CredenceBond {
             if e.ledger().timestamp() < earliest {
                 panic!("notice period not elapsed");
             }
+        } else if now < bond.bond_start + bond.duration {
+            return Err(ContractError::LockupNotExpired);
         }
 
         let available = bond

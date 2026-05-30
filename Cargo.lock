@@ -288,6 +288,10 @@ name = "credence_bond"
 version = "0.1.0"
 dependencies = [
  "credence_errors",
+<<<<<<< HEAD
+ "credence_math",
+=======
+>>>>>>> main
  "soroban-sdk",
 ]
 
