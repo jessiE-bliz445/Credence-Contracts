@@ -1,6 +1,7 @@
 #![no_std]
 
 mod early_exit_penalty;
+mod migration;
 mod nonce;
 mod rolling_bond;
 mod slashing;
@@ -358,6 +359,8 @@ impl CredenceBond {
 
     /// Retrieve the current bond state.
     pub fn get_identity_state(e: Env) -> IdentityBond {
+        // Ensure storage is migrated from v1 to v2 before accessing bond state
+        migration::migrate_v1_to_v2(&e);
         let key = DataKey::Bond;
         let bond: IdentityBond = e
             .storage()
