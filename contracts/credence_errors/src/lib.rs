@@ -297,6 +297,22 @@ pub enum ContractError {
     /// Contracts: delegation
     DelegationExpiryTooLong = 503,
 
+    /// Payload domain tag does not match the expected delegated action.
+    /// Contracts: delegation
+    DomainMismatch = 504,
+
+    /// Payload owner does not match the expected caller owner.
+    /// Contracts: delegation
+    OwnerMismatch = 505,
+
+    /// Payload target does not match the expected action target.
+    /// Contracts: delegation
+    TargetMismatch = 506,
+
+    /// Payload contract_id does not match the current contract address.
+    /// Contracts: delegation
+    ContractIdMismatch = 507,
+
     // --- Treasury (600-699) ---
     /// Amount argument must be strictly positive (> 0).
     /// Replaces: panic!("amount must be positive")
@@ -411,7 +427,11 @@ impl ErrorExt for ContractError {
             ContractError::ExpiryInPast
             | ContractError::DelegationNotFound
             | ContractError::AlreadyRevoked
-            | ContractError::DelegationExpiryTooLong => ErrorCategory::Delegation,
+            | ContractError::DelegationExpiryTooLong
+            | ContractError::DomainMismatch
+            | ContractError::OwnerMismatch
+            | ContractError::TargetMismatch
+            | ContractError::ContractIdMismatch => ErrorCategory::Delegation,
 
             ContractError::AmountMustBePositive
             | ContractError::ThresholdExceedsSigners
