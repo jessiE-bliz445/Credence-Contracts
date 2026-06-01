@@ -1,0 +1,73 @@
+name: Wasm Reproducibility
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - ci/**
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - rust-toolchain.toml
+      - contracts/**
+      - .github/workflows/wasm-repro.yml
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - rust-toolchain.toml
+      - contracts/**
+      - .github/workflows/wasm-repro.yml
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  TZ: UTC
+  SOURCE_DATE_EPOCH: "0"
+
+jobs:
+  reproducibility:
+    name: Reproducible wasm builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-wasm-repro-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml', 'rust-toolchain.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-wasm-repro-
+
+      - name: Build and hash pass 1
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/wasm-repro-1
+        run: |
+          cargo build --release --target wasm32-unknown-unknown --locked -p credence_bond -p credence_delegation
+          sha256sum "$CARGO_TARGET_DIR/wasm32-unknown-unknown/release/credence_bond.wasm" \
+            "$CARGO_TARGET_DIR/wasm32-unknown-unknown/release/credence_delegation.wasm" \
+            > "$RUNNER_TEMP/wasm-repro-1.sha256"
+
+      - name: Build and hash pass 2
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/wasm-repro-2
+        run: |
+          cargo build --release --target wasm32-unknown-unknown --locked -p credence_bond -p credence_delegation
+          sha256sum "$CARGO_TARGET_DIR/wasm32-unknown-unknown/release/credence_bond.wasm" \
+            "$CARGO_TARGET_DIR/wasm32-unknown-unknown/release/credence_delegation.wasm" \
+            > "$RUNNER_TEMP/wasm-repro-2.sha256"
+
+      - name: Compare hashes
+        run: diff -u "$RUNNER_TEMP/wasm-repro-1.sha256" "$RUNNER_TEMP/wasm-repro-2.sha256"

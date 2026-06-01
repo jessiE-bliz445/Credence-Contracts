@@ -8,7 +8,7 @@ Part of [Credence](../README.md). Contracts run on the Stellar network via Sorob
 
 ## Prerequisites
 
-- Rust 1.84+ (with `wasm32-unknown-unknown`: `rustup target add wasm32-unknown-unknown`)
+- Rust 1.85.1+ (pinned in [`rust-toolchain.toml`](rust-toolchain.toml)); the WASM target is included
 - [Soroban CLI](https://developers.stellar.org/docs/smart-contracts/getting-started/setup) (`cargo install soroban-cli`)
 
 ## Setup
@@ -22,8 +22,10 @@ cargo build
 For Soroban (WASM) build:
 
 ```bash
-cargo build --target wasm32-unknown-unknown --release -p credence_bond
+cargo build --target wasm32-unknown-unknown --release --locked -p credence_bond -p credence_delegation
 ```
+
+For the reproducibility check and the CI hash comparison, see [docs/wasm-reproducibility.md](docs/wasm-reproducibility.md).
 
 ## Tests
 
