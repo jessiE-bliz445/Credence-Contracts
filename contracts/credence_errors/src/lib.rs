@@ -344,43 +344,19 @@ pub enum ContractError {
 
     /// Payload domain tag does not match the expected delegated action.
     /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
     DomainMismatch = 504,
 
     /// Payload owner does not match the expected caller owner.
     /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
     OwnerMismatch = 505,
 
     /// Payload target does not match the expected action target.
     /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
     TargetMismatch = 506,
 
     /// Payload contract_id does not match the current contract address.
     /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
     ContractIdMismatch = 507,
-
-    /// Unknown or unsupported signature scheme tag.
-    /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
-    UnknownScheme = 508,
-
-    /// Verifier already registered for the given scheme tag.
-    /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
-    VerifierAlreadyRegistered = 509,
-
-    /// No verifier registered for the given scheme tag.
-    /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
-    VerifierNotRegistered = 510,
-
-    /// Signature verification failed for the given scheme and payload.
-    /// Contracts: delegation
-    /// Wire-stable: do not renumber this error code.
-    VerificationFailed = 511,
 
     // --- Treasury (600-699) ---
     /// Amount argument must be strictly positive (> 0).
@@ -510,11 +486,7 @@ impl ErrorExt for ContractError {
             | ContractError::DomainMismatch
             | ContractError::OwnerMismatch
             | ContractError::TargetMismatch
-            | ContractError::ContractIdMismatch
-            | ContractError::UnknownScheme
-            | ContractError::VerifierAlreadyRegistered
-            | ContractError::VerifierNotRegistered
-            | ContractError::VerificationFailed => ErrorCategory::Delegation,
+            | ContractError::ContractIdMismatch => ErrorCategory::Delegation,
 
             ContractError::AmountMustBePositive
             | ContractError::ThresholdExceedsSigners
