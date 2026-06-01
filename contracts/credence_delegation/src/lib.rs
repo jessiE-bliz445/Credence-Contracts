@@ -535,3 +535,11 @@ mod test_domain_separation;
 
 #[cfg(test)]
 mod test_delegation_ttl;
+ 
++#[cfg(test)]
++pub mod test_budget_helper;
++
++#[cfg(test)]
++mod test_budget_ceilings;
++
+use credence_errors::ContractError;

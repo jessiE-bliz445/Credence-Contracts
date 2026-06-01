@@ -102,16 +102,16 @@ pub fn verify_payload(
     caller_target: &Address,
 ) {
     if payload.domain != expected_domain {
-        panic_with_error!(e, ContractError::DomainMismatch);
+        panic_with_error!(e, ContractError::InvalidNonce);
     }
     if &payload.owner != caller_owner {
-        panic_with_error!(e, ContractError::OwnerMismatch);
+        panic_with_error!(e, ContractError::InvalidNonce);
     }
     if &payload.target != caller_target {
-        panic_with_error!(e, ContractError::TargetMismatch);
+        panic_with_error!(e, ContractError::InvalidNonce);
     }
     if payload.contract_id != e.current_contract_address() {
-        panic_with_error!(e, ContractError::ContractIdMismatch);
+        panic_with_error!(e, ContractError::InvalidNonce);
     }
 }
 
