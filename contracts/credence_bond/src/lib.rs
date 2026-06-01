@@ -87,6 +87,23 @@ impl CredenceBond {
     ///
     /// Errors:
     /// - `ContractError::AlreadyInitialized` if called more than once.
+    ///
+    /// See also: [`docs/credence-bond.md`](../../../docs/credence-bond.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// ```
     pub fn initialize(e: Env, admin: Address) {
         admin.require_auth();
         e.storage().instance().set(&DataKey::Admin, &admin);
@@ -97,6 +114,26 @@ impl CredenceBond {
     /// Errors:
     /// - `ContractError::NotInitialized` when admin is not set.
     /// - `ContractError::NotAdmin` when caller is not the configured admin.
+    ///
+    /// See also: [`docs/early-exit.md`](../../../docs/early-exit.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let treasury = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// // 500 bps = 5% penalty
+    /// client.set_early_exit_config(&admin, &treasury, &500_u32);
+    /// ```
     pub fn set_early_exit_config(e: Env, admin: Address, treasury: Address, penalty_bps: u32) {
         admin.require_auth();
         let stored_admin: Address = e
@@ -111,6 +148,26 @@ impl CredenceBond {
     }
 
     /// Register an authorized attester.
+    ///
+    /// See also: [`docs/attestations.md`](../../../docs/attestations.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let attester = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.register_attester(&attester);
+    /// assert!(client.is_attester(&attester));
+    /// ```
     pub fn register_attester(e: Env, attester: Address) {
         let admin: Address = e
             .storage()
@@ -127,6 +184,27 @@ impl CredenceBond {
     }
 
     /// Remove an authorized attester.
+    ///
+    /// See also: [`docs/attestations.md`](../../../docs/attestations.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let attester = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.register_attester(&attester);
+    /// client.unregister_attester(&attester);
+    /// assert!(!client.is_attester(&attester));
+    /// ```
     pub fn unregister_attester(e: Env, attester: Address) {
         let admin: Address = e
             .storage()
@@ -143,6 +221,23 @@ impl CredenceBond {
     }
 
     /// Check whether an address is an authorized attester.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let stranger = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// assert!(!client.is_attester(&stranger));
+    /// ```
     pub fn is_attester(e: Env, attester: Address) -> bool {
         e.storage()
             .instance()
@@ -153,6 +248,32 @@ impl CredenceBond {
     /// Create a new bond for an identity.
     ///
     /// Authority: `identity` must authorize the call.
+    ///
+    /// See also: [`docs/credence-bond.md`](../../../docs/credence-bond.md),
+    /// [`docs/rolling-bonds.md`](../../../docs/rolling-bonds.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    ///
+    /// // Fixed-duration bond: 1000 tokens locked for 86400 seconds
+    /// let bond = client.create_bond(&identity, &1000_i128, &86400_u64, &false, &0_u64);
+    /// assert!(bond.active);
+    /// assert_eq!(bond.bonded_amount, 1000);
+    /// assert_eq!(bond.slashed_amount, 0);
+    /// assert!(!bond.is_rolling);
+    /// ```
     pub fn create_bond(
         e: Env,
         identity: Address,
@@ -188,6 +309,32 @@ impl CredenceBond {
     }
 
     /// Retrieve the current bond state.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond has been created.
+    ///
+    /// See also: [`docs/credence-bond.md`](../../../docs/credence-bond.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &500_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// let state = client.get_identity_state();
+    /// assert_eq!(state.bonded_amount, 500);
+    /// assert!(state.active);
+    /// ```
     pub fn get_identity_state(e: Env) -> IdentityBond {
         // Ensure storage is migrated from v1 to v2 before accessing bond state
         migration::migrate_v1_to_v2(&e);
@@ -202,6 +349,37 @@ impl CredenceBond {
     }
 
     /// Add a weighted attestation for a subject.
+    ///
+    /// Errors:
+    /// - `ContractError::UnauthorizedAttester` when caller is not a registered attester.
+    /// - `ContractError::DuplicateAttestation` when the same (attester, subject, data) triple already exists.
+    ///
+    /// See also: [`docs/attestations.md`](../../../docs/attestations.md),
+    /// [`docs/weighted-attestations.md`](../../../docs/weighted-attestations.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address, String};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let attester = Address::generate(&e);
+    /// let subject = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.register_attester(&attester);
+    ///
+    /// let data = String::from_str(&e, "kyc:verified");
+    /// let attestation = client.add_attestation(&attester, &subject, &data, &0_u64);
+    /// assert_eq!(attestation.verifier, attester);
+    /// assert_eq!(attestation.identity, subject);
+    /// assert!(!attestation.revoked);
+    /// ```
     pub fn add_attestation(
         e: Env,
         attester: Address,
@@ -273,6 +451,42 @@ impl CredenceBond {
     }
 
     /// Withdraw from a bond after the relevant notice period.
+    ///
+    /// For fixed-duration bonds the lockup must have expired.
+    /// For rolling bonds [`request_withdrawal`](Self::request_withdrawal) must have been called
+    /// and the notice period must have elapsed.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond exists.
+    /// - `ContractError::LockupNotExpired` when the lockup has not yet expired (fixed-duration).
+    /// - `ContractError::InsufficientBalance` when `amount` exceeds available balance.
+    ///
+    /// See also: [`docs/withdrawal.md`](../../../docs/withdrawal.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::{Address as _, Ledger};
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &1000_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// // Advance time past the lockup
+    /// let mut info = e.ledger().get();
+    /// info.timestamp = info.timestamp + 3601;
+    /// e.ledger().set(info);
+    ///
+    /// let bond = client.withdraw(&500_i128);
+    /// assert_eq!(bond.bonded_amount, 500);
+    /// ```
     pub fn withdraw(e: Env, amount: i128) -> IdentityBond {
         let key = DataKey::Bond;
         let mut bond: IdentityBond = e
@@ -319,6 +533,36 @@ impl CredenceBond {
     }
 
     /// Withdraw early and apply the configured early exit penalty.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond exists.
+    /// - `ContractError::LockupNotExpired` when the lockup has already expired (use `withdraw` instead).
+    /// - `ContractError::InsufficientBalance` when `amount` exceeds available balance.
+    ///
+    /// See also: [`docs/early-exit.md`](../../../docs/early-exit.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let treasury = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.set_early_exit_config(&admin, &treasury, &500_u32);
+    /// client.create_bond(&identity, &1000_i128, &86400_u64, &false, &0_u64);
+    ///
+    /// // Withdraw early while lockup is still active; penalty is applied
+    /// let bond = client.withdraw_early(&200_i128);
+    /// assert_eq!(bond.bonded_amount, 800);
+    /// ```
     pub fn withdraw_early(e: Env, amount: i128) -> IdentityBond {
         let key = DataKey::Bond;
         let mut bond: IdentityBond = e
@@ -369,6 +613,37 @@ impl CredenceBond {
     }
 
     /// Request withdrawal for a rolling bond.
+    ///
+    /// Starts the notice period clock. After `notice_period_duration` seconds,
+    /// [`withdraw`](Self::withdraw) or [`withdraw_bond`](Self::withdraw_bond) may be called.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond exists.
+    /// - `ContractError::NotRollingBond` when the bond is not rolling.
+    /// - `ContractError::WithdrawalAlreadyRequested` when already requested.
+    ///
+    /// See also: [`docs/rolling-bonds.md`](../../../docs/rolling-bonds.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// // Rolling bond with 1800s notice period
+    /// client.create_bond(&identity, &1000_i128, &86400_u64, &true, &1800_u64);
+    ///
+    /// let bond = client.request_withdrawal();
+    /// assert!(bond.withdrawal_requested_at > 0);
+    /// ```
     pub fn request_withdrawal(e: Env) -> IdentityBond {
         let key = DataKey::Bond;
         let mut bond: IdentityBond = e
@@ -393,6 +668,36 @@ impl CredenceBond {
     }
 
     /// Renew a rolling bond if the current period ended and withdrawal was not requested.
+    ///
+    /// No-op for non-rolling bonds or when a withdrawal has been requested.
+    ///
+    /// See also: [`docs/rolling-bonds.md`](../../../docs/rolling-bonds.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::{Address as _, Ledger};
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &1000_i128, &3600_u64, &true, &600_u64);
+    ///
+    /// // Advance past the period end
+    /// let mut info = e.ledger().get();
+    /// info.timestamp = info.timestamp + 3601;
+    /// e.ledger().set(info);
+    ///
+    /// let bond = client.renew_if_rolling();
+    /// // bond_start has been reset to the new period
+    /// assert!(bond.is_rolling);
+    /// ```
     pub fn renew_if_rolling(e: Env) -> IdentityBond {
         let key = DataKey::Bond;
         let mut bond: IdentityBond = e
@@ -421,17 +726,94 @@ impl CredenceBond {
     }
 
     /// Get the current bond tier.
+    ///
+    /// Tier is derived from `bonded_amount` after slashing.
+    ///
+    /// See also: [`docs/tier-system.md`](../../../docs/tier-system.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient, BondTier};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &100_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// let tier = client.get_tier();
+    /// assert_eq!(tier, BondTier::Bronze);
+    /// ```
     pub fn get_tier(e: Env) -> BondTier {
         let bond = Self::get_identity_state(e);
         tiered_bond::get_tier_for_amount(bond.bonded_amount)
     }
 
     /// Slash a bond and return the updated bond state.
+    ///
+    /// Errors:
+    /// - `ContractError::NotInitialized` when admin is not set.
+    /// - `ContractError::NotAdmin` when caller is not the admin.
+    /// - `ContractError::SlashExceedsBond` when slash amount exceeds bonded amount.
+    ///
+    /// See also: [`docs/slashing.md`](../../../docs/slashing.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &1000_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// let bond = client.slash(&admin, &200_i128);
+    /// assert_eq!(bond.slashed_amount, 200);
+    /// ```
     pub fn slash(e: Env, admin: Address, amount: i128) -> IdentityBond {
         slashing::slash_bond(&e, &admin, amount)
     }
 
     /// Top up the bond amount.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond exists.
+    /// - `ContractError::Overflow` when the addition would overflow `i128`.
+    ///
+    /// See also: [`docs/credence-bond.md`](../../../docs/credence-bond.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &500_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// let bond = client.top_up(&250_i128);
+    /// assert_eq!(bond.bonded_amount, 750);
+    /// ```
     pub fn top_up(e: Env, amount: i128) -> IdentityBond {
         let key = DataKey::Bond;
         let mut bond: IdentityBond = e
@@ -451,6 +833,32 @@ impl CredenceBond {
     }
 
     /// Extend the bond duration.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond exists.
+    /// - `ContractError::Overflow` when the new duration or end timestamp would overflow `u64`.
+    ///
+    /// See also: [`docs/credence-bond.md`](../../../docs/credence-bond.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &1000_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// let bond = client.extend_duration(&1800_u64);
+    /// assert_eq!(bond.bond_duration, 5400);
+    /// ```
     pub fn extend_duration(e: Env, additional_duration: u64) -> IdentityBond {
         let key = DataKey::Bond;
         let mut bond: IdentityBond = e
@@ -476,6 +884,28 @@ impl CredenceBond {
     }
 
     /// Deposit fees into the contract.
+    ///
+    /// See also: [`docs/fees.md`](../../../docs/fees.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// client.initialize(&admin);
+    ///
+    /// client.deposit_fees(&100_i128);
+    /// // Fees are now available for collection by the admin
+    /// let collected = client.collect_fees(&admin);
+    /// assert_eq!(collected, 100);
+    /// ```
     pub fn deposit_fees(e: Env, amount: i128) {
         let key = Symbol::new(&e, "fees");
         let current: i128 = e.storage().instance().get(&key).unwrap_or(0);
@@ -483,6 +913,35 @@ impl CredenceBond {
     }
 
     /// Withdraw the full bonded amount with a reentrancy guard.
+    ///
+    /// Errors:
+    /// - `ContractError::BondNotFound` when no bond exists.
+    /// - `ContractError::NotBondOwner` when `identity` does not match the bond owner.
+    /// - `ContractError::BondNotActive` when the bond is already inactive.
+    /// - `ContractError::ReentrancyDetected` when called re-entrantly.
+    ///
+    /// See also: [`docs/withdrawal.md`](../../../docs/withdrawal.md),
+    /// [`docs/reentrancy.md`](../../../docs/reentrancy.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &1000_i128, &0_u64, &false, &0_u64);
+    ///
+    /// let withdrawn = client.withdraw_bond(&identity);
+    /// assert_eq!(withdrawn, 1000);
+    /// ```
     pub fn withdraw_bond(e: Env, identity: Address) -> i128 {
         identity.require_auth();
         Self::acquire_lock(&e);
@@ -547,6 +1006,36 @@ impl CredenceBond {
     }
 
     /// Slash a portion of the bond with a reentrancy guard.
+    ///
+    /// Returns the cumulative slashed amount after this operation.
+    ///
+    /// Errors:
+    /// - `ContractError::NotAdmin` when caller is not the admin.
+    /// - `ContractError::BondNotFound` / `ContractError::BondNotActive` when bond is missing or inactive.
+    /// - `ContractError::SlashExceedsBond` when cumulative slash would exceed bonded amount.
+    /// - `ContractError::ReentrancyDetected` when called re-entrantly.
+    ///
+    /// See also: [`docs/slashing.md`](../../../docs/slashing.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let identity = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.create_bond(&identity, &1000_i128, &3600_u64, &false, &0_u64);
+    ///
+    /// let cumulative_slashed = client.slash_bond(&admin, &300_i128);
+    /// assert_eq!(cumulative_slashed, 300);
+    /// ```
     pub fn slash_bond(e: Env, admin: Address, slash_amount: i128) -> i128 {
         admin.require_auth();
         Self::acquire_lock(&e);
@@ -604,6 +1093,35 @@ impl CredenceBond {
     }
 
     /// Collect protocol fees.
+    ///
+    /// Resets the fee balance to zero and returns the amount collected.
+    ///
+    /// Errors:
+    /// - `ContractError::NotAdmin` when caller is not the admin.
+    /// - `ContractError::ReentrancyDetected` when called re-entrantly.
+    ///
+    /// See also: [`docs/fees.md`](../../../docs/fees.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.deposit_fees(&50_i128);
+    ///
+    /// let collected = client.collect_fees(&admin);
+    /// assert_eq!(collected, 50);
+    /// // Second call returns zero — fees were cleared
+    /// assert_eq!(client.collect_fees(&admin), 0);
+    /// ```
     pub fn collect_fees(e: Env, admin: Address) -> i128 {
         admin.require_auth();
         Self::acquire_lock(&e);
@@ -634,6 +1152,27 @@ impl CredenceBond {
     }
 
     /// Register a callback contract for testing hooks.
+    ///
+    /// The registered contract receives `on_withdraw`, `on_slash`, and `on_collect` calls
+    /// from [`withdraw_bond`](Self::withdraw_bond), [`slash_bond`](Self::slash_bond),
+    /// and [`collect_fees`](Self::collect_fees) respectively.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// let callback = Address::generate(&e);
+    /// client.initialize(&admin);
+    /// client.set_callback(&callback);
+    /// ```
     pub fn set_callback(e: Env, addr: Address) {
         e.storage()
             .instance()
@@ -641,6 +1180,29 @@ impl CredenceBond {
     }
 
     /// Check if the reentrancy lock is held.
+    ///
+    /// Returns `true` while a guarded operation ([`withdraw_bond`](Self::withdraw_bond),
+    /// [`slash_bond`](Self::slash_bond), [`collect_fees`](Self::collect_fees)) is executing.
+    ///
+    /// See also: [`docs/reentrancy.md`](../../../docs/reentrancy.md)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// e.mock_all_auths();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let admin = Address::generate(&e);
+    /// client.initialize(&admin);
+    ///
+    /// // Lock is not held outside of a guarded call
+    /// assert!(!client.is_locked());
+    /// ```
     pub fn is_locked(e: Env) -> bool {
         Self::check_lock(&e)
     }
@@ -691,11 +1253,85 @@ pub struct Bond {
 }
 
 /// Returns true when `amount` is a valid bond amount.
+///
+/// # Example
+///
+/// ```
+/// use credence_bond::is_valid_bond;
+///
+/// assert!(is_valid_bond(1));
+/// assert!(is_valid_bond(1_000_000));
+/// assert!(!is_valid_bond(0));
+/// assert!(!is_valid_bond(-1));
+/// ```
 pub fn is_valid_bond(amount: i128) -> bool {
     amount > 0
 }
 
 /// Creates and returns a validated bond object.
+///
+/// Returns `Err` for invalid inputs: zero/negative amount, zero duration, or an invalid
+/// notice period on a rolling bond.
+///
+/// See also: [`docs/credence-bond.md`](../../../docs/credence-bond.md)
+///
+/// # Example — valid fixed-duration bond
+///
+/// ```
+/// use credence_bond::create_bond;
+///
+/// let bond = create_bond(1000, 0, 3600, false, 0).unwrap();
+/// assert_eq!(bond.amount, 1000);
+/// assert_eq!(bond.duration, 3600);
+/// assert!(!bond.is_rolling);
+/// ```
+///
+/// # Example — valid rolling bond
+///
+/// ```
+/// use credence_bond::create_bond;
+///
+/// let bond = create_bond(500, 0, 7200, true, 1800).unwrap();
+/// assert!(bond.is_rolling);
+/// assert_eq!(bond.notice_period_duration, 1800);
+/// ```
+///
+/// # Example — invalid amount returns `Err`
+///
+/// ```
+/// use credence_bond::create_bond;
+/// use credence_errors::ContractError;
+///
+/// assert_eq!(create_bond(0, 0, 3600, false, 0), Err(ContractError::InvalidBondAmount));
+/// assert_eq!(create_bond(-1, 0, 3600, false, 0), Err(ContractError::InvalidBondAmount));
+/// ```
+///
+/// # Example — zero duration returns `Err`
+///
+/// ```
+/// use credence_bond::create_bond;
+/// use credence_errors::ContractError;
+///
+/// assert_eq!(create_bond(100, 0, 0, false, 0), Err(ContractError::InvalidBondDuration));
+/// ```
+///
+/// # Example — rolling bond with notice > duration returns `Err`
+///
+/// ```
+/// use credence_bond::create_bond;
+/// use credence_errors::ContractError;
+///
+/// assert_eq!(create_bond(100, 0, 3600, true, 3601), Err(ContractError::InvalidNoticePeriod));
+/// ```
+///
+/// # Example — overflow on bond end timestamp returns `Err`
+///
+/// ```
+/// use credence_bond::create_bond;
+/// use credence_errors::ContractError;
+///
+/// assert_eq!(create_bond(100, u64::MAX, 1, false, 0), Err(ContractError::Overflow));
+/// ```
 pub fn create_bond(
     amount: i128,
     bond_start: u64,
