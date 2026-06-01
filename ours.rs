@@ -703,7 +703,11 @@ impl CredenceBond {
             return bond;
         }
         let now = e.ledger().timestamp();
-        if !rolling_bond::is_period_ended(now, bond.bond_start, bond.bond_duration) {
+        let end = bond
+            .bond_start
+            .checked_add(bond.bond_duration)
+            .expect("bond end timestamp overflow");
+        if now < end {
             return bond;
         }
         rolling_bond::apply_renewal(&mut bond, now);
@@ -806,9 +810,7 @@ impl CredenceBond {
             .unwrap_or_else(|| panic_with_error!(e, ContractError::Overflow));
 
         // Also verify the end timestamp wouldn't overflow
-        let _end_timestamp = bond
-            .bond_start
-            .checked_add(bond.bond_duration)
+        bond.bond_start.checked_add(bond.bond_duration)
             .unwrap_or_else(|| panic_with_error!(e, ContractError::Overflow));
 
         let timestamp = e.ledger().timestamp();
