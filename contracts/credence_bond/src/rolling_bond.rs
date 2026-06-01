@@ -1,15 +1,3 @@
-#402--Contracts]-Bond--differential-test-harness-comparing-ours.rs/base.rs/theirs.rs-against-credence_bond-crate-FIX
-use crate::IdentityBond;
-
-pub fn is_period_ended(now: u64, bond_start: u64, bond_duration: u64) -> bool {
-    bond_start
-        .checked_add(bond_duration)
-        .is_some_and(|end| now >= end)
-}
-
-pub fn apply_renewal(bond: &mut IdentityBond, now: u64) {
-    bond.bond_start = now;
-
 //! Rolling Bond Type
 //!
 //! Auto-renews at period end unless withdrawal was requested with notice.
@@ -40,12 +28,11 @@ pub fn can_withdraw_after_notice(
 /// Call when period has ended and bond is rolling.
 pub fn apply_renewal(bond: &mut IdentityBond, new_start: u64) {
     bond.bond_start = new_start;
-    bond.withdrawal_requested_at = 0; // reset withdrawal request on renewal
+    bond.withdrawal_requested_at = 0;
 }
 
 /// Returns the period end timestamp (start + duration) using saturating add.
 #[must_use]
 pub fn period_end(start: u64, duration: u64) -> u64 {
     start.saturating_add(duration)
-main
 }

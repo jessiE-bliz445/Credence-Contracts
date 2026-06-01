@@ -369,6 +369,25 @@ pub enum ContractError {
     /// Wire-stable: do not renumber this error code.
     VerificationFailed = 507,
 
+    // --- Delegation mismatch errors (504-506) ---
+    DomainMismatch = 504,
+    OwnerMismatch = 505,
+    TargetMismatch = 506,
+    ContractIdMismatch = 507,
+
+    // --- Admin Transfer (109-112) ---
+    /// No pending admin transfer exists.
+    NoPendingAdmin = 109,
+
+    /// Proposed admin is the zero/identity address.
+    InvalidAdminAddress = 110,
+
+    /// Proposed admin is the same as the current admin.
+    AdminUnchanged = 111,
+
+    /// Timelock delay has not yet elapsed.
+    TimelockNotReady = 112,
+
     // --- Treasury (600-699) ---
     /// Amount argument must be strictly positive (> 0).
     /// Replaces: panic!("amount must be positive")
@@ -510,6 +529,8 @@ impl ErrorExt for ContractError {
             | ContractError::FlashLoanRepaymentFailed => ErrorCategory::Treasury,
 
             ContractError::Overflow | ContractError::Underflow => ErrorCategory::Arithmetic,
+            ContractError::NoPendingAdmin | ContractError::InvalidAdminAddress | ContractError::AdminUnchanged | ContractError::TimelockNotReady => ErrorCategory::Authorization,
+            ContractError::DomainMismatch | ContractError::OwnerMismatch | ContractError::TargetMismatch | ContractError::ContractIdMismatch => ErrorCategory::Delegation,
         }
     }
 
@@ -610,6 +631,14 @@ impl ErrorExt for ContractError {
                 "Flashloan principal plus fee was not fully repaid"
             }
             ContractError::Overflow => "Integer overflow in checked arithmetic",
+            ContractError::NoPendingAdmin => "No pending admin transfer exists",
+            ContractError::DomainMismatch => "Payload domain tag does not match expected",
+            ContractError::OwnerMismatch => "Payload owner does not match expected caller",
+            ContractError::TargetMismatch => "Payload target does not match expected action",
+            ContractError::ContractIdMismatch => "Payload contract_id does not match current contract",
+            ContractError::InvalidAdminAddress => "Proposed admin is the zero or identity address",
+            ContractError::AdminUnchanged => "Proposed admin is the same as the current admin",
+            ContractError::TimelockNotReady => "Timelock delay has not yet elapsed",
             ContractError::Underflow => "Integer underflow in checked arithmetic",
         }
     }
